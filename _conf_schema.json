@@ -1,0 +1,26 @@
+{
+  "reasoning_effort": {
+    "description": "模型 · 思考强度",
+    "type": "string",
+    "default": "auto",
+    "options": [
+      "auto",
+      "inherit",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "labels": [
+      "自动 · 按问题选择（推荐）",
+      "跟随模型配置",
+      "低 · 闲聊优先",
+      "中 · 资料与识图",
+      "高 · 多条件分析",
+      "很高 · 深入推理",
+      "最高 · 模型支持时使用"
+    ],
+    "hint": "模型编辑里的 Reasoning Effort 优先于本项。自动模式按当前真实提问和短追问选择，不用工具结果重新定档；保存后从下一次新请求生效，实际档位受模型支持范围限制。"
+  }
+}

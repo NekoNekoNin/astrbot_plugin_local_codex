@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>请求状态 · 本地 Codex</title>
+  <script src="/api/plugin/page/bridge-sdk.js"></script>
+  <style>
+    :root{color-scheme:light;--bg:#f6f7fa;--panel:#fff;--text:#17243b;--muted:#59697f;--line:#dce2eb;--accent:#315de0;--soft:#edf2ff;--danger:#ad293b;--good:#18744a}
+    [data-theme="dark"]{color-scheme:dark;--bg:#101722;--panel:#192332;--text:#e8edf8;--muted:#aab8cd;--line:#354157;--accent:#adc0ff;--soft:#273957;--danger:#ffabb6;--good:#89ddb1}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,"Microsoft YaHei",sans-serif}main{max-width:1180px;margin:auto;padding:32px 24px}h1{font-size:28px;line-height:1.3;margin:6px 0 12px;letter-spacing:-.6px}p{margin:8px 0}.eyebrow{color:var(--accent);font-size:12px;letter-spacing:2px;font-weight:700}.muted,.meta{color:var(--muted)}.top{display:flex;justify-content:space-between;gap:20px;align-items:start}.count{font-size:32px;font-weight:650;font-variant-numeric:tabular-nums}.stats{display:flex;gap:28px;white-space:nowrap}.stats p{margin:0;font-size:13px}.toolbar{display:flex;gap:14px;align-items:end;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);padding:18px;border-radius:14px;margin:26px 0 16px}label{font-size:14px;display:block}input,select,button{font:inherit;color:inherit}input[type=search],select{display:block;min-height:44px;padding:8px 12px;border:1px solid var(--line);background:var(--bg);border-radius:8px;width:100%}.search{flex:1;min-width:210px}.actions{display:flex;gap:12px;align-items:center;min-height:44px}button{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:9px 16px;min-height:44px;cursor:pointer;transition:background .15s}button:hover{background:var(--soft)}button:disabled{opacity:.55;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.danger{color:var(--danger)}.error{padding:14px 18px;border:1px solid var(--danger);color:var(--danger);border-radius:10px;margin-bottom:16px}.row{border:1px solid var(--line);border-radius:14px;padding:20px;background:var(--panel);margin:14px 0}.row-head{display:flex;justify-content:space-between;gap:20px}.identity{font-weight:650}.meta{font-size:13px;overflow-wrap:anywhere}.preview{margin:12px 0;white-space:pre-wrap;overflow-wrap:anywhere}.badge{display:inline-block;font-size:13px;font-weight:600;background:var(--soft);color:var(--accent);padding:3px 10px;border-radius:5px;white-space:nowrap}.badge.sent{color:var(--good)}.badge.failed{color:var(--danger)}.effort{border-left:3px solid var(--accent);padding-left:12px;font-size:14px}.bottom{display:flex;justify-content:space-between;align-items:start;gap:16px;margin-top:15px}details{flex:1}summary{cursor:pointer;color:var(--muted);font-size:14px;min-height:32px}ol{padding-left:22px;font-size:13px;color:var(--muted)}.empty{padding:60px 20px;text-align:center;border:1px dashed var(--line);border-radius:14px;background:var(--panel)}.notice{font-size:13px;color:var(--muted);margin-top:18px}.refresh-state{font-size:13px;color:var(--muted);min-height:22px}.pause{display:flex;gap:8px;align-items:center;white-space:nowrap}.pause input{width:18px;height:18px}dialog{color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;max-width:480px;width:calc(100% - 32px)}dialog::backdrop{background:#050c1a80}dialog h2{margin:0 0 14px;font-size:20px}dialog .actions{justify-content:flex-end;margin-top:22px}dialog p{overflow-wrap:anywhere}.sr{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0)}
+    @media(max-width:650px){main{padding:22px 16px}.top{display:block}.stats{margin-top:20px;gap:34px}.toolbar{gap:12px}.toolbar>label{width:100%}.row{padding:16px}.row-head{gap:10px}.bottom{align-items:end}.count{font-size:26px}h1{font-size:25px}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body><main>
+  <header class="top"><div><div class="eyebrow">REQUEST MONITOR</div><h1>每个问题，进度可见</h1><p class="muted">查看思考档位、工具调用和发送结果，按需取消还在处理的问题。</p></div><div class="stats" aria-label="请求统计"><div><div class="count" id="active">0</div><p class="muted">正在处理</p></div><div><div class="count" id="finished">0</div><p class="muted">已发送</p></div></div></header>
+  <section class="toolbar" aria-label="筛选与刷新"><label class="search">筛选会话或消息<input type="search" id="search" placeholder="输入群号、会话、发送者或关键词"></label><label>状态<select id="status"><option value="all">全部请求</option><option value="active">处理中</option><option value="failed">失败</option><option value="sent">已发送</option><option value="cancelled">已取消</option></select></label><div class="actions"><label class="pause"><input type="checkbox" id="paused">暂停刷新</label><button id="refresh">刷新</button></div></section>
+  <div class="refresh-state" id="updated" role="status" aria-live="polite">正在连接请求状态…</div><div id="error" class="error" role="alert" hidden></div><section id="requests" aria-label="请求列表"></section>
+  <p class="notice">每 2 秒刷新，隐藏页面时暂停。仅保留本次运行最近 200 条记录，重载插件后清空。已发送表示平台接口已返回成功；无法确认对方是否已读。发送中的消息无法撤回。</p>
+  <p class="notice">档位设置：插件 → 本地 Codex 模型接入 → 配置 → 模型思考强度。选择“自动”按问题调整，也可固定档位；模型单独指定的档位优先。</p>
+</main>
+<dialog id="confirm"><h2>取消这条请求？</h2><p id="cancel-preview"></p><p class="muted">这会停止该请求后续处理。已经执行的外部操作和已发送的消息会保留。</p><div class="actions"><button id="keep">继续处理</button><button id="cancel-confirm" class="danger">取消请求</button></div></dialog>
+<script>
+const phases={queued:'已接收 · 排队中',preparing:'准备上下文',thinking:'模型思考中',tool:'正在调用工具',generated:'已生成 · 等待发送',sending:'平台发送中',sent:'已发送',failed:'处理失败',cancelling:'正在取消',cancelled:'已取消',skipped:'已跳过',no_delivery:'处理结束 · 未发送'};
+const terminal=new Set(['sent','failed','cancelled','skipped','no_delivery']);
+let items=[],busy=false,pendingId=null,bridge=null;
+const $=id=>document.getElementById(id);
+function el(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node}
+function time(value){return new Date(value*1000).toLocaleTimeString('zh-CN',{hour12:false})}
+function render(){
+  $('active').textContent=items.filter(x=>!terminal.has(x.status)).length;
+  $('finished').textContent=items.filter(x=>x.status==='sent').length;
+  const query=$('search').value.trim().toLowerCase(),status=$('status').value;
+  const shown=items.filter(x=>(!query||[x.session,x.sender,x.preview].join(' ').toLowerCase().includes(query))&&(status==='all'||(status==='active'?!terminal.has(x.status):x.status===status)));
+  const opened=new Set([...$('requests').querySelectorAll('article:has(details[open])')].map(node=>node.dataset.id));
+  const focusId=document.activeElement?.closest('article')?.dataset.id,focusType=document.activeElement?.tagName;
+  const nodes=shown.map(item=>{
+    const card=el('article','row'),head=el('div','row-head'),who=el('div');card.dataset.id=item.id;who.append(el('div','identity',item.sender||'未知发送者'),el('div','meta',item.session));head.append(who,el('span','badge '+item.status,phases[item.status]||item.status));card.append(head,el('p','preview',item.preview));
+    const elapsed=Math.max(0,Math.round(((terminal.has(item.status)?item.updated_at:Date.now()/1000)-item.created_at)));
+    card.append(el('div','meta',`${time(item.created_at)} 接收 · ${elapsed} 秒 · ${item.tool_count||0} 次工具调用 · ${item.accepted_sends||0} 次发送返回`));
+    if(item.effort){card.append(el('p','effort',`${item.model||'模型'} / ${item.effort} · ${item.effort_reason||''}`))}
+    if(item.tool&&item.status==='tool')card.append(el('p','meta','工具：'+item.tool));
+    if(item.error)card.append(el('p','danger',item.error));
+    const bottom=el('div','bottom'),details=el('details');details.open=opened.has(item.id);details.append(el('summary',null,'查看处理阶段'));const list=el('ol');for(const step of item.steps||[])list.append(el('li',null,`${time(step.at)}  ${phases[step.status]||step.status}`));details.append(list);bottom.append(details);
+    if(!terminal.has(item.status)&&!['sending','cancelling'].includes(item.status)){
+      const btn=el('button','danger','取消');btn.setAttribute('aria-label','取消来自 '+(item.sender||'该会话')+' 的请求');btn.onclick=()=>{pendingId=item.id;$('cancel-preview').textContent=item.preview;$('confirm').showModal();$('keep').focus()};bottom.append(btn)
+    }
+    card.append(bottom);return card;
+  });
+  if(!nodes.length)nodes.push(el('div','empty',items.length?'没有符合筛选条件的请求':'还没有请求记录。下一次机器人收到问题后，会在这里显示进度。'));
+  $('requests').replaceChildren(...nodes);
+  if(focusId){const row=nodes.find(node=>node.dataset.id===focusId);row?.querySelector(focusType==='BUTTON'?'button':'summary')?.focus({preventScroll:true})}
+}
+async function load(){
+  if(busy||!bridge)return;busy=true;$('refresh').disabled=true;
+  try{const data=await bridge.apiGet('requests');if(!data||!data.ok||!Array.isArray(data.items))throw Error(data?.message||'请求状态返回异常');items=data.items;render();$('error').hidden=true;$('updated').textContent='上次更新 '+new Date().toLocaleTimeString('zh-CN',{hour12:false})}
+  catch(error){$('error').textContent='暂时无法读取进度：'+error.message;$('error').hidden=false;$('updated').textContent='连接中断，页面保留上次结果'}finally{busy=false;$('refresh').disabled=false}
+}
+$('search').oninput=render;$('status').onchange=render;$('refresh').onclick=load;$('keep').onclick=()=>$('confirm').close();
+$('cancel-confirm').onclick=async()=>{
+  const btn=$('cancel-confirm');btn.disabled=true;
+  try{const data=await bridge.apiPost('requests/cancel',{id:pendingId});if(!data?.ok)throw Error(data?.message||'取消失败');$('confirm').close();await load()}
+  catch(error){$('confirm').close();await load();$('error').textContent=error.message;$('error').hidden=false}finally{btn.disabled=false}
+};
+async function start(){
+  bridge=window.AstrBotPluginView||window.AstrBotPluginPage;if(!bridge){$('error').textContent='请从 AstrBot 插件页面打开请求状态，以使用已登录的管理会话。';$('error').hidden=false;return}
+  await bridge.ready();await load();setInterval(()=>{if(!document.hidden&&!$('paused').checked&&!$('confirm').open)load()},2000);
+}
+start().catch(error=>{$('error').textContent='页面连接失败：'+error.message;$('error').hidden=false});
+</script></body></html>

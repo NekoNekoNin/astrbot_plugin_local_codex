@@ -1,0 +1,1 @@
+# Uses the host AstrBot dependencies; Python 3.11+ is required.
