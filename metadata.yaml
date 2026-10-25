@@ -1,7 +1,7 @@
 name: astrbot_plugin_local_codex
 display_name: NekoNekoNin · 本地 Codex 模型接入
 desc: 在 AstrBot 中复用本机 Codex 登录，支持工具调用、流式回复、自动思考档位、请求进度和单条取消。
-version: v1.2.3
+version: v1.2.4
 author: NekoNekoNin
 astrbot_version: '>=4.28.0'
 repo: https://github.com/NekoNekoNin/astrbot_plugin_local_codex

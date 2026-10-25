@@ -31,7 +31,7 @@ class CodexClient:
         self.lock = asyncio.Lock()
         self.tasks = []
         self.catalog = {}
-        self.catalog_at = 0
+        self.catalog_at = None
         REQUESTS.clients.add(self)
 
     async def start(self):
@@ -209,7 +209,7 @@ class CodexClient:
         Returns:
             Supported effort names, or an empty set for an unknown catalog entry.
         """
-        if time.monotonic() - self.catalog_at > 300:
+        if self.catalog_at is None or time.monotonic() - self.catalog_at > 300:
             await self.models()
         item = self.catalog.get(model, {})
         return {

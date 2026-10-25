@@ -628,6 +628,19 @@ class RequestLifecycleTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(record["accepted_sends"], 1)
                     self.assertIn("OSError", record["error"])
 
+    async def test_catalog_loads_during_first_five_minutes_after_system_boot(self):
+        client = NativeStub()
+        with patch.object(CLIENT.time, "monotonic", return_value=5.0):
+            self.assertEqual(
+                await client.supported_efforts("fast-model"), {"low", "medium"}
+            )
+            self.assertEqual(
+                await client.supported_efforts("deep-model"), {"high", "xhigh"}
+            )
+        self.assertEqual(
+            sum(method == "model/list" for method, _ in client.rpc_calls), 1
+        )
+
     async def test_catalog_uses_each_models_actual_supported_efforts(self):
         client = NativeStub()
         self.assertEqual(
