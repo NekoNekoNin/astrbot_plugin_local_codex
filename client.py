@@ -8,20 +8,22 @@ import copy
 import json
 import logging
 import os
-import shutil
 import subprocess
 import time
 import tomllib
 from pathlib import Path
 
 from .request_state import REQUESTS
+from .runtime import RuntimeSetupError, resolve_runtime
 
 
 class CodexClient:
     """Manage one local app-server and its transient inference threads."""
 
-    def __init__(self, home: Path, workspace: Path):
+    def __init__(self, home: Path, workspace: Path, settings_path: Path | None = None):
         self.home = home
+        self.default_home = home
+        self.settings_path = settings_path
         self.workspace = workspace
         self.process = None
         self.pending = {}
@@ -39,14 +41,9 @@ class CodexClient:
         async with self.lock:
             if self.process and self.process.returncode is None:
                 return
-            candidates = list(
-                (Path.home() / "AppData/Local/OpenAI/Codex/bin").glob("*/codex.exe")
+            executable, self.home, _ = resolve_runtime(
+                self.default_home, self.settings_path
             )
-            executable = shutil.which("codex")
-            if not executable and candidates:
-                executable = str(max(candidates, key=lambda p: p.stat().st_mtime))
-            if not executable:
-                raise RuntimeError("The local Codex CLI was not found.")
             config_file = self.home / "config.toml"
             config = (
                 tomllib.loads(config_file.read_text(encoding="utf-8-sig"))
@@ -76,7 +73,7 @@ class CodexClient:
             }
             for name in config.get("mcp_servers", {}):
                 overrides[f"mcp_servers.{name}.enabled"] = False
-            arguments = [executable, "app-server", "--listen", "stdio://"]
+            arguments = [*executable, "app-server", "--listen", "stdio://"]
             for key, value in overrides.items():
                 arguments.extend(["-c", f"{key}={json.dumps(value)}"])
             self.workspace.mkdir(parents=True, exist_ok=True)
@@ -96,21 +93,69 @@ class CodexClient:
                 asyncio.create_task(self.drain_stderr()),
             ]
             try:
-                await self.request(
-                    "initialize",
-                    {
-                        "clientInfo": {
-                            "name": "astrbot_local_codex",
-                            "title": "AstrBot Local Codex",
-                            "version": "1.0.0",
+                await asyncio.wait_for(
+                    self.request(
+                        "initialize",
+                        {
+                            "clientInfo": {
+                                "name": "astrbot_local_codex",
+                                "title": "AstrBot Local Codex",
+                                "version": "1.3.0",
+                            },
+                            "capabilities": {"experimentalApi": True},
                         },
-                        "capabilities": {"experimentalApi": True},
-                    },
+                    ),
+                    20,
                 )
                 await self.write({"method": "initialized", "params": {}})
             except BaseException:
                 await self.close()
                 raise
+
+    async def diagnose(self):
+        """Check protocol, login and catalog without inference or credential access.
+
+        Returns:
+            A redacted report. A model catalog does not prove inference access.
+        """
+        report = {"connected": False, "authenticated": None, "model_count": 0}
+        try:
+            await asyncio.wait_for(self.start(), 25)
+            report["connected"] = True
+            account = await asyncio.wait_for(
+                self.request("account/read", {"refreshToken": False}), 10
+            )
+            identity = account.get("account")
+            required = account.get("requiresOpenaiAuth", True)
+            report["authenticated"] = bool(identity) or required is False
+            report["auth_mode"] = (
+                identity.get("type", "unknown")
+                if isinstance(identity, dict)
+                else "external_provider"
+                if required is False
+                else "not_logged_in"
+            )
+            models = await asyncio.wait_for(self.models(), 15)
+            report["model_count"] = len(models)
+            report["message"] = (
+                "CLI 已连通，账号状态正常。模型目录可读取；实际推理权限以聊天请求为准。"
+                if report["authenticated"]
+                else "CLI 已连通，但当前用户目录尚未登录。请以运行 AstrBot 的 Windows 用户执行 codex login。"
+            )
+        except TimeoutError:
+            report["message"] = (
+                "Codex 连接超时，请检查 CLI 是否可运行、网络状态及本机登录。"
+            )
+        except RuntimeSetupError as exc:
+            report["message"] = str(exc)
+        except Exception as exc:
+            # RPC errors may include personal or provider data; never echo them.
+            report["message"] = (
+                "Codex 检查失败（"
+                + type(exc).__name__
+                + "），请检查 CLI 路径、用户目录及 CLI 版本。"
+            )
+        return report
 
     async def write(self, message):
         """Write one protocol message; never log account or conversation data.

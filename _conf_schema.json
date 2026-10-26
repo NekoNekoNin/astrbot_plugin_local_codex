@@ -22,5 +22,17 @@
       "最高 · 模型支持时使用"
     ],
     "hint": "模型编辑里的 Reasoning Effort 优先于本项。自动模式按当前真实提问和短追问选择，不用工具结果重新定档；保存后从下一次新请求生效，实际档位受模型支持范围限制。"
+  },
+  "cli_path": {
+    "description": "PC 接入 · Codex CLI 路径",
+    "type": "string",
+    "default": "",
+    "hint": "留空自动识别 Codex 桌面版附带程序或 PATH。手填 codex.exe、官方 npm 的 codex.cmd 或 codex.js 完整路径；不要填写命令参数或额外引号。保存前请等待正在处理的请求结束。"
+  },
+  "codex_home": {
+    "description": "PC 接入 · Codex 用户目录",
+    "type": "string",
+    "default": "",
+    "hint": "留空使用 CODEX_HOME 环境变量或当前 Windows 用户的 .codex。自定义目录需先自行登录；插件不复制凭据。管理员发送 /codex状态 可检查连接、登录和模型目录。"
   }
 }

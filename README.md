@@ -4,7 +4,7 @@
 
 在 AstrBot 中复用本机 Codex 登录，支持工具调用、流式回复、自动思考档位、请求进度和单条取消。
 
-版本：`v1.2.4` · 许可：[MIT](LICENSE)
+版本：`v1.3.0` · 许可：[MIT](LICENSE)
 
 作者：**NekoNekoNin**。
 
@@ -18,11 +18,15 @@
 
 在 AstrBot 的插件管理上传本插件发布 ZIP，或使用[本仓库地址](https://github.com/NekoNekoNin/astrbot_plugin_local_codex)安装。内部插件名保持 `astrbot_plugin_local_codex`，升级时沿用已有配置。元数据已绑定本仓库，更新时请核对版本与更新记录。
 
-需要本机安装 Codex CLI 并自行完成登录。插件与 CLI 运行在同一用户环境；本插件需要 Python 3.11+。不随仓库分发账号凭据。
+本版面向 Windows PC。需要本机安装 Codex CLI 或 Codex 桌面版附带 CLI，并自行完成登录。插件与 CLI 运行在同一用户环境；本插件需要 Python 3.11+。不随仓库分发账号凭据。
 
 ## 设置
 
 入口：**AstrBot → 插件 → 本地 Codex 模型接入 → 配置**。常用选项直接显示，适用时提供中文下拉标签、数值滑块、条件显示与高级折叠。完整选项见 [配置说明](docs/CONFIGURATION.md)。
+
+## PC 连接检查
+
+默认识别桌面版附带的 `codex.exe` 和 PATH，支持 npm 安装的入口。识别失败时，在插件配置填写 CLI 路径和可选用户目录；保存会重建本插件连接，请等待当前请求结束。管理员发送 `/codex状态`，检查程序连接、账号登录状态和模型目录；检查不发起推理，不输出邮箱或凭据。模型目录可读不代表实际推理权限已验证。
 
 ## 聊天示例
 

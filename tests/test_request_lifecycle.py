@@ -36,6 +36,9 @@ for module_name, attributes in {
     },
     "astrbot.api.event": {
         "filter": types.SimpleNamespace(
+            PermissionType=types.SimpleNamespace(ADMIN="admin"),
+            permission_type=lambda *args, **kwargs: lambda handler: handler,
+            command=lambda *args, **kwargs: lambda handler: handler,
             **{
                 hook: lambda **kwargs: lambda handler: handler
                 for hook in (
@@ -47,7 +50,7 @@ for module_name, attributes in {
                     "on_agent_done",
                     "after_message_sent",
                 )
-            }
+            },
         )
     },
     "astrbot.api.star": {"Context": object, "Star": object},

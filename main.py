@@ -50,6 +50,8 @@ class LocalCodexProvider(ProviderOpenAIOfficial):
         self.codex = CodexClient(
             Path.home() / ".codex",
             Path(get_astrbot_data_path()) / "plugin_data/local_codex/workspace",
+            Path(get_astrbot_data_path())
+            / "config/astrbot_plugin_local_codex_config.json",
         )
         INSTANCES.add(self)
 
@@ -187,7 +189,68 @@ class Main(RequestHooks, Star):
 
     def __init__(self, context: Context, config: AstrBotConfig | None = None):
         super().__init__(context, config)
+        self.context = context
         self.register_request_api(context)
+
+        async def diagnose_connection():
+            from quart import jsonify
+
+            return jsonify(await self.connection_status())
+
+        context.register_web_api(
+            "/astrbot_plugin_local_codex/diagnose",
+            diagnose_connection,
+            ["POST"],
+            "检查本机 Codex 连接与登录",
+        )
+
+    async def initialize(self):
+        """Refresh surviving provider connections after a plugin settings reload."""
+        for provider in self.context.get_all_providers():
+            if (
+                getattr(provider, "provider_config", {}).get("type")
+                != "local_codex_openai"
+            ):
+                continue
+            await provider.codex.close()
+            provider.codex = CodexClient(
+                Path.home() / ".codex",
+                Path(get_astrbot_data_path()) / "plugin_data/local_codex/workspace",
+                Path(get_astrbot_data_path())
+                / "config/astrbot_plugin_local_codex_config.json",
+            )
+            INSTANCES.add(provider)
+
+    async def connection_status(self):
+        """Use an isolated CLI process so diagnostics cannot interrupt chat.
+
+        Returns:
+            A report containing no credentials, email address or conversation data.
+        """
+        client = CodexClient(
+            Path.home() / ".codex",
+            Path(get_astrbot_data_path()) / "plugin_data/local_codex/diagnostics",
+            Path(get_astrbot_data_path())
+            / "config/astrbot_plugin_local_codex_config.json",
+        )
+        try:
+            return await client.diagnose()
+        finally:
+            await client.close()
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @filter.command("codex状态")
+    async def codex_status(self, event):
+        """Return bounded local diagnostics to administrators only.
+
+        Args:
+            event: The administrator command event.
+        """
+        result = await self.connection_status()
+        yield event.plain_result(
+            f"本地 Codex：{result['message']}\n"
+            f"模型目录：{result['model_count']} 项；本版支持 Windows PC。"
+        )
 
     @filter.on_waiting_llm_request(priority=100)
     async def request_waiting(self, event):
@@ -220,7 +283,8 @@ class Main(RequestHooks, Star):
     async def terminate(self):
         """Stop adapter-owned connections when the plugin is unloaded."""
         for provider in list(INSTANCES):
-            await provider.terminate()
+            # Provider instances belong to ProviderManager and may survive reload.
+            await provider.codex.close()
         metadata = provider_cls_map.get("local_codex_openai")
         if metadata and metadata.cls_type is LocalCodexProvider:
             provider_cls_map.pop("local_codex_openai")
