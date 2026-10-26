@@ -1,10 +1,12 @@
 <img src="logo.png" width="80" height="80" alt="本地 Codex 模型接入图标">
 
-# NekoNekoNin · 本地 Codex 模型接入
+# 本地 Codex 模型接入
 
 在 AstrBot 中复用本机 Codex 登录，支持工具调用、流式回复、自动思考档位、请求进度和单条取消。
 
 版本：`v1.2.4` · 许可：[MIT](LICENSE)
+
+作者：**NekoNekoNin**。
 
 ## 能做什么
 
@@ -20,7 +22,7 @@
 
 ## 设置
 
-入口：**AstrBot → 插件 → NekoNekoNin · 本地 Codex 模型接入 → 配置**。常用选项直接显示，适用时提供中文下拉标签、数值滑块、条件显示与高级折叠。完整选项见 [配置说明](docs/CONFIGURATION.md)。
+入口：**AstrBot → 插件 → 本地 Codex 模型接入 → 配置**。常用选项直接显示，适用时提供中文下拉标签、数值滑块、条件显示与高级折叠。完整选项见 [配置说明](docs/CONFIGURATION.md)。
 
 ## 聊天示例
 
