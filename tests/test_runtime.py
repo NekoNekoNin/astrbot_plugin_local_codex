@@ -108,7 +108,7 @@ async def test_plugin_unload_closes_codex_without_closing_provider_http(tmp_path
 
 
 @pytest.mark.asyncio
-async def test_settings_reload_rebuilds_only_local_codex_connections():
+async def test_settings_reload_recreates_only_local_codex_adapters():
     from types import SimpleNamespace
 
     class Provider:
@@ -117,17 +117,14 @@ async def test_settings_reload_rebuilds_only_local_codex_connections():
     local, other = Provider(), Provider()
     local.provider_config = {"type": "local_codex_openai"}
     local.codex = SimpleNamespace(close=AsyncMock())
-    previous = local.codex
     other.provider_config = {"type": "another_provider"}
     other.codex = SimpleNamespace(close=AsyncMock())
     instance = object.__new__(MAIN.Main)
-    instance.context = SimpleNamespace(get_all_providers=lambda: [local, other])
-    replacement = object()
-    with (
-        patch.object(MAIN, "CodexClient", return_value=replacement),
-        patch.object(MAIN, "INSTANCES", set()),
-    ):
-        await instance.initialize()
-    previous.close.assert_awaited_once()
+    reload_adapter = AsyncMock()
+    instance.context = SimpleNamespace(
+        get_all_providers=lambda: [local, other],
+        provider_manager=SimpleNamespace(reload=reload_adapter),
+    )
+    await instance.initialize()
+    reload_adapter.assert_awaited_once_with({"type": "local_codex_openai"})
     other.codex.close.assert_not_awaited()
-    assert local.codex is replacement

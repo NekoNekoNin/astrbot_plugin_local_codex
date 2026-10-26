@@ -205,21 +205,15 @@ class Main(RequestHooks, Star):
         )
 
     async def initialize(self):
-        """Refresh surviving provider connections after a plugin settings reload."""
-        for provider in self.context.get_all_providers():
+        """Recreate surviving adapters through AstrBot after a plugin reload."""
+        for provider in list(self.context.get_all_providers()):
             if (
                 getattr(provider, "provider_config", {}).get("type")
                 != "local_codex_openai"
             ):
                 continue
-            await provider.codex.close()
-            provider.codex = CodexClient(
-                Path.home() / ".codex",
-                Path(get_astrbot_data_path()) / "plugin_data/local_codex/workspace",
-                Path(get_astrbot_data_path())
-                / "config/astrbot_plugin_local_codex_config.json",
-            )
-            INSTANCES.add(provider)
+            # Old provider methods otherwise retain the unloaded request registry.
+            await self.context.provider_manager.reload(dict(provider.provider_config))
 
     async def connection_status(self):
         """Use an isolated CLI process so diagnostics cannot interrupt chat.
@@ -234,7 +228,18 @@ class Main(RequestHooks, Star):
             / "config/astrbot_plugin_local_codex_config.json",
         )
         try:
-            return await client.diagnose()
+            report = await client.diagnose()
+            providers = [
+                item
+                for item in self.context.get_all_providers()
+                if getattr(item, "provider_config", {}).get("type")
+                == "local_codex_openai"
+            ]
+            report["configured_provider_count"] = len(providers)
+            report["provider_adapter_current"] = all(
+                isinstance(item, LocalCodexProvider) for item in providers
+            )
+            return report
         finally:
             await client.close()
 
