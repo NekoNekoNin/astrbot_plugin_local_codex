@@ -5,3 +5,12 @@ version: v1.3.0
 author: NekoNekoNin
 astrbot_version: '>=4.28.0'
 repo: https://github.com/NekoNekoNin/astrbot_plugin_local_codex
+support_platforms:
+  - aiocqhttp
+  - webchat
+tags:
+  - AI
+  - Codex
+  - 模型接入
+  - 本地部署
+  - Windows
