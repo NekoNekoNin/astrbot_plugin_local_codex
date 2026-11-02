@@ -16,18 +16,6 @@ PACKAGE = types.ModuleType(PACKAGE_NAME)
 PACKAGE.__path__ = [str(PACKAGE_PATH)]
 sys.modules[PACKAGE_NAME] = PACKAGE
 
-for module_name in ("request_state", "request_hooks", "client", "effort_policy"):
-    spec = importlib.util.spec_from_file_location(
-        f"{PACKAGE_NAME}.{module_name}", PACKAGE_PATH / f"{module_name}.py"
-    )
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-
-STATE = sys.modules[f"{PACKAGE_NAME}.request_state"]
-HOOKS = sys.modules[f"{PACKAGE_NAME}.request_hooks"]
-CLIENT = sys.modules[f"{PACKAGE_NAME}.client"]
-
 ASTRBOT_STUBS = {}
 for module_name, attributes in {
     "astrbot.api": {
@@ -71,6 +59,18 @@ for module_name, attributes in {
     ASTRBOT_STUBS[module_name] = stub
 
 with patch.dict(sys.modules, ASTRBOT_STUBS):
+    for module_name in ("request_state", "request_hooks", "client", "effort_policy"):
+        spec = importlib.util.spec_from_file_location(
+            f"{PACKAGE_NAME}.{module_name}", PACKAGE_PATH / f"{module_name}.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+    STATE = sys.modules[f"{PACKAGE_NAME}.request_state"]
+    HOOKS = sys.modules[f"{PACKAGE_NAME}.request_hooks"]
+    CLIENT = sys.modules[f"{PACKAGE_NAME}.client"]
+
     MAIN_SPEC = importlib.util.spec_from_file_location(
         f"{PACKAGE_NAME}.main", PACKAGE_PATH / "main.py"
     )

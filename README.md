@@ -4,7 +4,7 @@
 
 在 AstrBot 中复用本机 Codex 登录，支持工具调用、流式回复、自动思考档位、请求进度和单条取消。
 
-版本：`v1.3.0` · 许可：[MIT](LICENSE)
+版本：`v1.3.1` · 许可：[MIT](LICENSE)
 
 作者：**NekoNekoNin**。
 

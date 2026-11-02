@@ -6,12 +6,13 @@ import binascii
 import contextlib
 import copy
 import json
-import logging
 import os
 import subprocess
 import time
 import tomllib
 from pathlib import Path
+
+from astrbot.api import logger
 
 from .request_state import REQUESTS
 from .runtime import RuntimeSetupError, resolve_runtime
@@ -100,7 +101,7 @@ class CodexClient:
                             "clientInfo": {
                                 "name": "astrbot_local_codex",
                                 "title": "AstrBot Local Codex",
-                                "version": "1.3.0",
+                                "version": "1.3.1",
                             },
                             "capabilities": {"experimentalApi": True},
                         },
@@ -396,7 +397,7 @@ class CodexClient:
                                     except (binascii.Error, ValueError):
                                         pass
                             if not valid_image:
-                                logging.getLogger(__name__).warning(
+                                logger.warning(
                                     "Skipped an unavailable image before sending Codex input."
                                 )
                                 part.clear()

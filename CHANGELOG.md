@@ -1,5 +1,9 @@
 # 更新记录
 
+## v1.3.1
+
+- 图片不可用时统一使用 `astrbot.api.logger` 记录警告，移除 Python 内置 `logging` 的使用，符合插件市场日志规范。
+
 ## v1.3.0
 
 - 面向 Windows PC 自动寻找桌面版或 PATH 中的 Codex CLI，支持 npm 入口且不调用 shell。

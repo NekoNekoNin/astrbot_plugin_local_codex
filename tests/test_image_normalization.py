@@ -5,7 +5,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 PACKAGE_NAME = "local_codex_image_transport_tests"
 PACKAGE_PATH = Path(__file__).parents[1]
@@ -18,7 +18,10 @@ for name in ("request_state", "client"):
     )
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
+    with patch.dict(
+        sys.modules, {"astrbot.api": types.SimpleNamespace(logger=MagicMock())}
+    ):
+        spec.loader.exec_module(module)
 CLIENT = sys.modules[f"{PACKAGE_NAME}.client"]
 INLINE_IMAGE = "data:image/png;base64,aW1hZ2UtZml4dHVyZQ=="
 
@@ -93,7 +96,11 @@ class ImageTransportTests(unittest.IsolatedAsyncioTestCase):
             AsyncMock(return_value=None),
             AsyncMock(side_effect=OSError("fixture failure")),
         ):
-            turn = await self.capture("C:/missing/private-image.webp", resolver)
+            with patch.object(CLIENT.logger, "warning") as warning:
+                turn = await self.capture("C:/missing/private-image.webp", resolver)
+            warning.assert_called_once_with(
+                "Skipped an unavailable image before sending Codex input."
+            )
             self.assertEqual(len(turn["input"]), 1)
             self.assertIn("Image unavailable", turn["input"][0]["text"])
             self.assertNotIn("private-image", turn["input"][0]["text"])
